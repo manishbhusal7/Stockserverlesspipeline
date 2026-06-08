@@ -1,0 +1,101 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:         # Allow manual trigger from the GitHub Actions UI
+
+permissions:
+  contents: read
+
+jobs:
+  # ── Job 1: Terraform (infrastructure + Lambda code) ────────────────────
+  infrastructure:
+    name: Terraform Apply
+    runs-on: ubuntu-latest
+    outputs:
+      api_url:    ${{ steps.outputs.outputs.api_url }}
+      s3_bucket:  ${{ steps.outputs.outputs.s3_bucket }}
+      website_url: ${{ steps.outputs.outputs.website_url }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "~1.9"
+          terraform_wrapper: false    # Needed to capture raw output values
+
+      - name: Terraform Init
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Validate
+        run: terraform validate
+        working-directory: terraform
+
+      - name: Terraform Plan
+        run: terraform plan -out=tfplan -input=false
+        working-directory: terraform
+        env:
+          TF_VAR_massive_api_key: ${{ secrets.MASSIVE_API_KEY }}
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false tfplan
+        working-directory: terraform
+        env:
+          TF_VAR_massive_api_key: ${{ secrets.MASSIVE_API_KEY }}
+
+      - name: Capture Terraform outputs
+        id: outputs
+        run: |
+          echo "api_url=$(terraform output -raw api_gateway_url)"    >> $GITHUB_OUTPUT
+          echo "s3_bucket=$(terraform output -raw s3_bucket_name)"   >> $GITHUB_OUTPUT
+          echo "website_url=$(terraform output -raw s3_website_url)" >> $GITHUB_OUTPUT
+        working-directory: terraform
+
+  # ── Job 2: Frontend (inject API URL, sync to S3) ────────────────────────
+  frontend:
+    name: Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: infrastructure
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id:     ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region:            us-east-1
+
+      - name: Inject API URL into config.js
+        run: |
+          API_URL="${{ needs.infrastructure.outputs.api_url }}"
+          sed -i "s|PLACEHOLDER_API_URL|${API_URL}|g" frontend/config.js
+          echo "✅ Injected API URL: ${API_URL}"
+
+      - name: Sync frontend to S3
+        run: |
+          BUCKET="${{ needs.infrastructure.outputs.s3_bucket }}"
+          aws s3 sync frontend/ "s3://${BUCKET}/" \
+            --delete \
+            --cache-control "max-age=300, public"
+          echo "✅ Frontend deployed to: ${{ needs.infrastructure.outputs.website_url }}"
+
+      - name: Print live URL
+        run: |
+          echo ""
+          echo "🌐 Live URL: ${{ needs.infrastructure.outputs.website_url }}"
+          echo "📡 API URL:  ${{ needs.infrastructure.outputs.api_url }}"

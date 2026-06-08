@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="TRE Watchlist — Daily top-mover tracker for AAPL, MSFT, GOOGL, AMZN, TSLA, NVDA" />
+    <title>TRE Watchlist · Daily Top Movers</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+    <!-- Chart.js (CDN — no build step) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <header class="site-header">
+      <div class="container">
+        <div class="header-brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+            <polyline points="16 7 22 7 22 13"></polyline>
+          </svg>
+          <div>
+            <h1 class="brand-name">TRE Watchlist</h1>
+            <p class="brand-sub">Daily Top Mover · Serverless Pipeline</p>
+          </div>
+        </div>
+
+        <div class="watchlist-pills">
+          <span class="pill">AAPL</span>
+          <span class="pill">MSFT</span>
+          <span class="pill">GOOGL</span>
+          <span class="pill">AMZN</span>
+          <span class="pill">TSLA</span>
+          <span class="pill">NVDA</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── Main ────────────────────────────────────────────────────────── -->
+    <main class="container">
+
+      <!-- Loading skeleton -->
+      <section id="state-loading" class="state-panel">
+        <div class="spinner"></div>
+        <p>Fetching market data…</p>
+      </section>
+
+      <!-- Error panel -->
+      <section id="state-error" class="state-panel hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon error-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p id="error-msg">Could not load data. Please try again later.</p>
+        <button class="btn-retry" onclick="loadData()">Retry</button>
+      </section>
+
+      <!-- Empty state (API returned no records yet) -->
+      <section id="state-empty" class="state-panel hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        <p>No data yet — the pipeline runs daily after market close (10 PM UTC).</p>
+      </section>
+
+      <!-- Content -->
+      <div id="content" class="hidden">
+
+        <!-- ── Summary bar ──────────────────────────────────────────── -->
+        <div class="summary-bar">
+          <div class="summary-stat">
+            <span class="stat-label">Data Points</span>
+            <span id="stat-count" class="stat-value">—</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Best Day</span>
+            <span id="stat-best" class="stat-value gain">—</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Worst Day</span>
+            <span id="stat-worst" class="stat-value loss">—</span>
+          </div>
+          <div class="summary-stat">
+            <span class="stat-label">Last Updated</span>
+            <span id="stat-updated" class="stat-value mono">—</span>
+          </div>
+        </div>
+
+        <!-- ── Chart ───────────────────────────────────────────────── -->
+        <section class="card chart-card">
+          <h2 class="card-title">7-Day % Change History</h2>
+          <div class="chart-wrap">
+            <canvas id="movementChart"></canvas>
+          </div>
+        </section>
+
+        <!-- ── Movers grid ─────────────────────────────────────────── -->
+        <section>
+          <h2 class="section-heading">Daily Top Movers</h2>
+          <div id="movers-grid" class="movers-grid"></div>
+        </section>
+
+      </div>
+
+    </main>
+
+    <!-- ── Footer ──────────────────────────────────────────────────────── -->
+    <footer class="site-footer">
+      <div class="container">
+        <span>Powered by <a href="https://massive.com" target="_blank" rel="noopener">Massive.com</a></span>
+        <span class="footer-sep">·</span>
+        <span>Deployed on <strong>AWS</strong> (Lambda · DynamoDB · API Gateway · S3)</span>
+        <span class="footer-sep">·</span>
+        <span>Infrastructure as Code with <strong>Terraform</strong></span>
+      </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>

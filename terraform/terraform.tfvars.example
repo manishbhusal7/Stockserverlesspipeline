@@ -1,0 +1,10 @@
+# Copy this file to terraform.tfvars and fill in your values.
+# terraform.tfvars is gitignored — NEVER commit secrets to git.
+#
+# Alternatively, export secrets as environment variables:
+#   export TF_VAR_massive_api_key="your-key-here"
+
+aws_region      = "us-east-1"
+project_name    = "stock-pipeline"
+environment     = "prod"
+massive_api_key = "YOUR_MASSIVE_API_KEY_HERE"
