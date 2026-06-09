@@ -34,8 +34,6 @@ const elGrid          = $("movers-grid");
 const elTableBody     = $("movers-table-body");
 const elTableWrapper  = $("movers-table-wrapper");
 const elWatchlistList = $("watchlist-checklist");
-const elLimitVal      = $("limit-val");
-const elLimitSlider   = $("limit-slider");
 
 const elToggleGrid    = $("toggle-view-grid");
 const elToggleTable   = $("toggle-view-table");
@@ -379,18 +377,6 @@ function setupEventListeners() {
       });
     }
   });
-
-  // Limit Range Slider
-  if (elLimitSlider) {
-    elLimitSlider.addEventListener("input", (e) => {
-      currentLimit = parseInt(e.target.value);
-      elLimitVal.textContent = currentLimit;
-    });
-
-    elLimitSlider.addEventListener("change", () => {
-      loadData();
-    });
-  }
 
   // View Mode Toggles
   if (elToggleGrid && elToggleTable) {
