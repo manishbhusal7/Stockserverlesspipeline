@@ -46,45 +46,7 @@ def _rate_limit_wait(exc: urllib.error.HTTPError) -> int:
     return 65
 
 
-def _fetch_from_yahoo_finance(ticker: str) -> dict | None:
-    """
-    Fallback method to fetch the latest completed day's bar from Yahoo Finance.
-    Returns a dict with 'o' (open), 'c' (close), and 't' (timestamp in milliseconds).
-    """
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}?range=5d&interval=1d"
-    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-    try:
-        logger.info("Calling Yahoo Finance fallback for %s...", ticker)
-        with urllib.request.urlopen(req, timeout=10) as r:
-            data = json.loads(r.read())
-        res = data.get("chart", {}).get("result", [])
-        if not res:
-            return None
-        res = res[0]
-        timestamps = res.get("timestamp", [])
-        quote = res.get("indicators", {}).get("quote", [{}])[0]
-        opens = quote.get("open", [])
-        closes = quote.get("close", [])
-        
-        # Search backwards for a valid completed bar
-        for i in range(len(timestamps) - 1, -1, -1):
-            if i < len(opens) and i < len(closes) and opens[i] is not None and closes[i] is not None:
-                ts_ms = int(timestamps[i] * 1000)
-                logger.info(
-                    "Yahoo Finance | %s | o=%.2f c=%.2f t=%d",
-                    ticker, opens[i], closes[i], ts_ms
-                )
-                return {
-                    "o": float(opens[i]),
-                    "c": float(closes[i]),
-                    "t": ts_ms
-                }
-    except Exception as exc:
-        logger.error("Failed to fetch from Yahoo Finance for %s: %s", ticker, exc)
-    return None
-
-
-def _fetch_previous_day_bar(ticker: str, api_key: str | None, max_retries: int = 3) -> dict | None:
+def _fetch_previous_day_bar(ticker: str, api_key: str, max_retries: int = 3) -> dict | None:
     """
     Call GET /v2/aggs/ticker/{ticker}/prev and return the first result dict,
     or None if the request fails after all retries.
@@ -92,10 +54,6 @@ def _fetch_previous_day_bar(ticker: str, api_key: str | None, max_retries: int =
     Retries with exponential back-off on 429 (rate limit) and transient errors.
     Raises immediately on 401/403 (bad credentials).
     """
-    if not api_key or api_key == "YOUR_MASSIVE_API_KEY_HERE":
-        logger.warning("No valid Massive API key. Falling back directly to Yahoo Finance for %s.", ticker)
-        return _fetch_from_yahoo_finance(ticker)
-
     url = f"{MASSIVE_API_BASE}/v2/aggs/ticker/{ticker}/prev"
 
     for attempt in range(max_retries):
@@ -146,8 +104,8 @@ def _fetch_previous_day_bar(ticker: str, api_key: str | None, max_retries: int =
             if attempt < max_retries - 1:
                 time.sleep(2 ** attempt)
 
-    logger.warning("Massive.com fetch failed for %s. Attempting Yahoo Finance fallback...", ticker)
-    return _fetch_from_yahoo_finance(ticker)
+    logger.warning("Massive.com fetch failed for %s.", ticker)
+    return None
 
 
 # Lambda entrypoint
@@ -157,8 +115,8 @@ def lambda_handler(event, context):  # noqa: ARG001
     try:
         api_key = _get_api_key()
     except Exception as exc:
-        logger.warning("Failed to retrieve Massive API key from Secrets Manager: %s. Proceeding with Yahoo Finance fallback.", exc)
-        api_key = None
+        logger.error("Failed to retrieve Massive API key from Secrets Manager: %s", exc)
+        raise exc
 
     candidates: list[dict] = []
     failed_tickers: list[str] = []

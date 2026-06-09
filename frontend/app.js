@@ -481,10 +481,9 @@ async function loadData() {
       elDiagCache.style.color = "var(--text-subtle)";
     }
 
-    // Update diagnosis info
     elDiagGw.innerHTML = `<span class="dot"></span>Connected`;
-    elApiModeVal.textContent = json.source === "yahoo" ? "Yahoo Fallback" : "Massive Live";
-    elApiModeVal.className = `badge-val ${json.source === "yahoo" ? "fallback" : "live"}`;
+    elApiModeVal.textContent = "Massive Live";
+    elApiModeVal.className = "badge-val live";
 
     rebuildWatchlistChecklist();
     applyFiltersAndRender();
