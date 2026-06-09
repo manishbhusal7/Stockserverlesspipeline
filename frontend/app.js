@@ -7,14 +7,14 @@
  * multiple ticker selections, and custom spreadsheet views.
  */
 
-// ── Configuration ──────────────────────────────────────────────────────────
+// App configuration
 
 const API_URL =
   (window.APP_CONFIG && window.APP_CONFIG.apiUrl !== "PLACEHOLDER_API_URL"
     ? window.APP_CONFIG.apiUrl
     : null);
 
-// ── DOM References ─────────────────────────────────────────────────────────
+// DOM references
 
 const $ = (id) => document.getElementById(id);
 
@@ -44,7 +44,7 @@ const elDiagCache     = $("diag-cache-status");
 const elDiagGw        = $("diag-gw-status");
 const elApiModeVal    = $("api-mode-val");
 
-// ── Application State ──────────────────────────────────────────────────────
+// Application state variables
 
 let allMoversData = [];
 let selectedTickers = new Set(["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"]);
@@ -56,7 +56,7 @@ let currentViewMode = "grid"; // "grid" | "table"
 const clientCache = {};
 let chartInstance = null;
 
-// ── Formatting Helpers ─────────────────────────────────────────────────────
+// Utility formatting helpers
 
 function formatDate(iso) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -80,7 +80,7 @@ function formatPrice(v) {
   return "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
-// ── State Panel Toggles ────────────────────────────────────────────────────
+// Interface state toggles
 
 function showLoading() {
   elLoading.classList.remove("hidden");
@@ -109,7 +109,7 @@ function showContent() {
   elContent.classList.remove("hidden");
 }
 
-// ── Watchlist Panel Checklist Builder ──────────────────────────────────────
+// Checklist UI component for watchlist filters
 
 function rebuildWatchlistChecklist() {
   elWatchlistList.innerHTML = "";
@@ -147,7 +147,7 @@ function rebuildWatchlistChecklist() {
   });
 }
 
-// ── Dynamic Summary Metric Calculation ─────────────────────────────────────
+// Metric calculations for headers
 
 function renderSummary(movers) {
   elStatCount.textContent = movers.length;
@@ -175,7 +175,7 @@ function renderSummary(movers) {
   });
 }
 
-// ── Interactive Charting (Chart.js Config Upgrade) ─────────────────────────
+// Chart rendering using Chart.js
 
 function renderChart(movers) {
   const sorted = [...movers].sort((a, b) => a.date.localeCompare(b.date));
@@ -257,7 +257,7 @@ function renderChart(movers) {
   });
 }
 
-// ── Render Views (Grid View + Spreadsheet View) ────────────────────────────
+// Render Grid and Table views
 
 function renderGridView(movers) {
   elGrid.innerHTML = "";
@@ -320,7 +320,7 @@ function renderTableView(movers) {
   });
 }
 
-// ── Filter Aggregation ──────────────────────────────────────────────────────
+// Aggregated filters for stock search
 
 function applyFiltersAndRender() {
   let filtered = [...allMoversData];
@@ -353,7 +353,7 @@ function applyFiltersAndRender() {
   }
 }
 
-// ── Interactive UI Event Binding ──────────────────────────────────────────
+// Event listener definitions
 
 function setupEventListeners() {
   // Select All Watchlist Tickers
@@ -412,7 +412,7 @@ function setupEventListeners() {
   }
 }
 
-// ── API Fetching with Programmatic ETag Caching ──────────────────────────
+// Data loading and ETag caching implementation
 
 async function loadData() {
   showLoading();
@@ -511,7 +511,7 @@ async function loadData() {
   }
 }
 
-// ── Application Bootstrapping ─────────────────────────────────────────────
+// App initialization
 
 setupEventListeners();
 loadData();

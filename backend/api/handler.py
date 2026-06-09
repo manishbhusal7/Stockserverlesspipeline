@@ -1,9 +1,4 @@
-"""
-API Lambda — GET /movers
-────────────────────────
-Returns the last 7 days of "top mover" records from DynamoDB.
-Invoked via API Gateway HTTP API (payload format 2.0).
-"""
+# API Lambda for GET /movers. Returns last 7 days of top mover records from DynamoDB.
 
 import hashlib
 import json
@@ -24,7 +19,8 @@ RESULT_LIMIT = int(os.environ.get("RESULT_LIMIT", "7"))
 
 _dynamodb = boto3.resource("dynamodb")
 
-# ── Response helpers ─────────────────────────────────────────────────────────
+# Response formatting helpers
+
 
 CORS_HEADERS = {
     "Content-Type": "application/json",
@@ -83,8 +79,7 @@ def _batch_get_all(date_keys: list[dict], max_retries: int = 5) -> list[dict]:
     raise RuntimeError("DynamoDB batch_get_item left unprocessed keys after retries")
 
 
-# ── Lambda handler ───────────────────────────────────────────────────────────
-
+# Lambda handler entrypoint
 def lambda_handler(event, context):  # noqa: ARG001
     # HTTP API v2 payload format
     method = (

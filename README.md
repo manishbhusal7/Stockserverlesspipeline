@@ -73,8 +73,6 @@ S3 Static Website  ──fetch──►  Chart.js bar chart + mover cards
 │   ├── styles.css              # Dark-theme responsive CSS
 │   ├── app.js                  # Fetch + Chart.js + mover cards
 │   └── config.js               # Runtime API URL (injected by CI/CD)
-├── scripts/
-│   └── local_server.py         # Local frontend/API server using live Massive data
 ├── Makefile                    # Developer shortcuts
 └── README.md
 ```
@@ -171,14 +169,7 @@ This injects the API URL into `frontend/config.js` and syncs the SPA to S3.
 
 ## Step 5 — Test the Pipeline
 
-### Option A: Test locally with live Massive data
-```bash
-MASSIVE_API_KEY="your-key-here" python3 scripts/local_server.py
-```
-
-Open `http://localhost:8000`. The local API calls Massive directly and returns `"source": "live"`. The server refuses to start without `MASSIVE_API_KEY`.
-
-### Option B: Manually trigger the ingestion Lambda after deploy
+### Manually trigger the ingestion Lambda after deploy
 ```bash
 make trigger
 ```

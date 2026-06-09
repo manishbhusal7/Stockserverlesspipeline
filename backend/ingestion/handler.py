@@ -1,11 +1,5 @@
-"""
-Stock Ingestion Lambda
-─────────────────────
-Triggered by EventBridge on a daily schedule (default 10 PM UTC).
-Fetches the previous trading day's OHLC data for each ticker in the watchlist
-via the Massive.com (Polygon.io) API, determines the highest absolute % change,
-and persists one record to DynamoDB.
-"""
+# Ingestion Lambda function. Runs on a cron, fetches previous day OHLC data 
+# for tickers, finds the daily top mover, and writes it to DynamoDB.
 
 import json
 import logging
@@ -21,8 +15,7 @@ import boto3
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
-# ── Configuration ────────────────────────────────────────────────────────────
-
+# Config options
 WATCHLIST: list[str] = os.environ.get(
     "WATCHLIST", "AAPL,MSFT,GOOGL,AMZN,TSLA,NVDA"
 ).split(",")
@@ -33,13 +26,12 @@ TTL_DAYS: int = int(os.environ.get("TTL_DAYS", "30"))
 REQUEST_DELAY_SECONDS: float = float(os.environ.get("MASSIVE_REQUEST_DELAY_SECONDS", "13"))
 MASSIVE_API_BASE = "https://api.massive.com"
 
-# ── AWS clients (reused across warm invocations) ────────────────────────────
-
+# AWS clients
 _dynamodb = boto3.resource("dynamodb")
 _secrets = boto3.client("secretsmanager")
 
+# Helper functions
 
-# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _get_api_key() -> str:
     """Retrieve the Massive API key from AWS Secrets Manager."""
@@ -158,8 +150,7 @@ def _fetch_previous_day_bar(ticker: str, api_key: str | None, max_retries: int =
     return _fetch_from_yahoo_finance(ticker)
 
 
-# ── Lambda handler ───────────────────────────────────────────────────────────
-
+# Lambda entrypoint
 def lambda_handler(event, context):  # noqa: ARG001
     logger.info("Ingestion started | watchlist=%s", WATCHLIST)
 

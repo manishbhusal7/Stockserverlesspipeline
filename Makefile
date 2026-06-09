@@ -1,6 +1,6 @@
-# ── Stock Serverless Pipeline — Makefile ───────────────────────────────────
+# Stock Serverless Pipeline Makefile
 #
-# Prerequisites: AWS CLI, Terraform ≥ 1.5, Python 3.12+
+# Prerequisites: AWS CLI, Terraform >= 1.5, Python 3.12+
 # Usage: make <target>
 
 .PHONY: help init validate plan apply destroy \
@@ -17,7 +17,7 @@ help: ## Show this help message
 	@grep -E '^[a-zA-Z_-]+:.*##' $(MAKEFILE_LIST) | \
 	  awk 'BEGIN {FS = ":.*##"}; {printf "  \033[36m%-22s\033[0m %s\n", $$1, $$2}'
 
-# ── Terraform lifecycle ────────────────────────────────────────────────────
+# Terraform lifecycle
 
 init: ## Initialise Terraform providers and modules
 	cd $(TF_DIR) && terraform init
@@ -35,8 +35,7 @@ destroy: ## Tear down all AWS resources (irreversible!)
 	@read -p "[WARNING] This will destroy ALL resources. Type 'yes' to confirm: " confirm && \
 	  [ "$$confirm" = "yes" ] && cd $(TF_DIR) && terraform destroy
 
-# ── Frontend ───────────────────────────────────────────────────────────────
-
+# Frontend
 frontend-deploy: ## Inject API URL into config.js and sync frontend to S3
 	$(eval API_URL  := $(call _tf_out,api_gateway_url))
 	$(eval S3_BUCKET := $(call _tf_out,s3_bucket_name))
@@ -47,8 +46,7 @@ frontend-deploy: ## Inject API URL into config.js and sync frontend to S3
 	@cp /tmp/config.js.bak frontend/config.js   # restore placeholder for local dev
 	@echo "[SUCCESS] Frontend live at: $(call _tf_out,s3_website_url)"
 
-# ── Lambda helpers ─────────────────────────────────────────────────────────
-
+# Lambda helpers
 trigger: ## Manually invoke the ingestion Lambda (test run)
 	$(eval FUNC := $(call _tf_out,ingestion_lambda_name))
 	@if [ -z "$(FUNC)" ]; then echo "[ERROR] Run 'make apply' first"; exit 1; fi
@@ -61,11 +59,10 @@ trigger: ## Manually invoke the ingestion Lambda (test run)
 	  --query LogResult \
 	  --output text | base64 --decode
 	@echo ""
-	@echo "── Response ──────────────────────────────"
+	@echo "[Response]"
 	@cat /tmp/ingestion-response.json | python3 -m json.tool
 
-# ── Logs ──────────────────────────────────────────────────────────────────
-
+# Logs
 logs-ingestion: ## Tail ingestion Lambda logs in real-time
 	$(eval FUNC := $(call _tf_out,ingestion_lambda_name))
 	@aws logs tail "/aws/lambda/$(FUNC)" --follow
@@ -74,8 +71,7 @@ logs-api: ## Tail API Lambda logs in real-time
 	$(eval FUNC := $(call _tf_out,api_lambda_name))
 	@aws logs tail "/aws/lambda/$(FUNC)" --follow
 
-# ── Remote state bootstrap ─────────────────────────────────────────────────
-
+# Remote state bootstrap
 create-state-bucket: ## Create S3 + DynamoDB for Terraform remote state (run once)
 	@read -p "Enter your AWS account ID: " ACCT && \
 	BUCKET="stock-pipeline-tf-state-$$ACCT" && \
