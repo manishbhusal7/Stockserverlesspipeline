@@ -106,9 +106,17 @@
 
         <!-- ── Movers grid ─────────────────────────────────────────── -->
         <section>
-          <h2 class="section-heading">Daily Top Movers</h2>
+          <div class="section-header">
+            <h2 class="section-heading">Daily Top Movers</h2>
+            <div class="filter-controls">
+              <button id="filter-dir-all" class="btn-filter active">All</button>
+              <button id="filter-dir-gain" class="btn-filter">Gains</button>
+              <button id="filter-dir-loss" class="btn-filter">Losses</button>
+            </div>
+          </div>
           <div id="movers-grid" class="movers-grid"></div>
         </section>
+
 
       </div>
 

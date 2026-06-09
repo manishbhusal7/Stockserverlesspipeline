@@ -9,6 +9,7 @@ Usage:
   MASSIVE_API_KEY=your-key-here python3 scripts/local_server.py
 """
 
+import hashlib
 import json
 import os
 import sys
@@ -17,6 +18,8 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs, urlparse
+
 
 # ── Config ────────────────────────────────────────────────────────────────
 
@@ -237,8 +240,20 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
+        # Parse query string parameters
+        parsed_url = urlparse(self.path)
+        
         # ── /movers API ───────────────────────────────────────────────────
-        if self.path in ("/movers", "/movers?"):
+        if parsed_url.path == "/movers":
+            # Extract limit parameter
+            query_params = parse_qs(parsed_url.query)
+            limit = 7
+            if "limit" in query_params:
+                try:
+                    limit = int(query_params["limit"][0])
+                except ValueError:
+                    pass
+
             if not API_KEY:
                 try:
                     movers = _yahoo_movers()
@@ -247,50 +262,73 @@ class Handler(BaseHTTPRequestHandler):
                     print(f"\nFailed to fetch from Yahoo Finance ({exc}), falling back to synthetic mock data…")
                     movers = _mock_movers()
                     source = "mock"
+                
+                # Apply pagination limit
+                movers = movers[:limit]
+                
                 payload = json.dumps(
                     {"status": "success", "count": len(movers), "data": movers, "source": source},
                     indent=2,
                 )
-                self._send(200, payload)
-                return
+            else:
+                print("\nFetching live data from Massive API…")
+                try:
+                    movers = _real_movers()
+                    # Apply pagination limit
+                    movers = movers[:limit]
+                except Exception as exc:
+                    payload = json.dumps(
+                        {
+                            "status": "error",
+                            "message": str(exc),
+                            "source": "live",
+                        },
+                        indent=2,
+                    )
+                    self._send(502, payload)
+                    return
 
-                
-            print("\nFetching live data from Massive API…")
-            try:
-                movers = _real_movers()
-            except Exception as exc:
+                if not movers:
+                    payload = json.dumps(
+                        {
+                            "status": "error",
+                            "message": "Massive API returned no usable stock data",
+                            "source": "live",
+                        },
+                        indent=2,
+                    )
+                    self._send(502, payload)
+                    return
+
                 payload = json.dumps(
-                    {
-                        "status": "error",
-                        "message": str(exc),
-                        "source": "live",
-                    },
+                    {"status": "success", "count": len(movers), "data": movers, "source": "live"},
                     indent=2,
                 )
-                self._send(502, payload)
+
+            # ETag verification
+            etag = f'W/"{hashlib.sha256(payload.encode()).hexdigest()[:16]}"'
+            if_none_match = self.headers.get("If-None-Match")
+            if if_none_match == etag:
+                self.send_response(304)
+                self.send_header("ETag", etag)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.end_headers()
                 return
 
-            if not movers:
-                payload = json.dumps(
-                    {
-                        "status": "error",
-                        "message": "Massive API returned no usable stock data",
-                        "source": "live",
-                    },
-                    indent=2,
-                )
-                self._send(502, payload)
-                return
-
-            payload = json.dumps(
-                {"status": "success", "count": len(movers), "data": movers, "source": "live"},
-                indent=2,
-            )
-            self._send(200, payload)
+            # Otherwise send full response
+            data = payload.encode()
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(data)))
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.send_header("ETag", etag)
+            self.send_header("Cache-Control", "public, max-age=300, must-revalidate")
+            self.end_headers()
+            self.wfile.write(data)
             return
 
         # ── Static files ──────────────────────────────────────────────────
-        path = self.path.split("?")[0]
+        path = parsed_url.path
         if path == "/":
             path = "/index.html"
 

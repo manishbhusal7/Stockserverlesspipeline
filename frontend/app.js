@@ -31,6 +31,10 @@ const elStatUpdated = $("stat-updated");
 const elGrid        = $("movers-grid");
 
 let chartInstance = null;
+let allMoversData = [];
+let selectedTickerFilter = null;
+let selectedDirectionFilter = "all";
+
 
 // ── State helpers ─────────────────────────────────────────────────────────
 
@@ -220,6 +224,78 @@ function renderCards(movers) {
   });
 }
 
+// ── Interactive Filters ────────────────────────────────────────────────────
+
+function applyFiltersAndRender() {
+  let filtered = [...allMoversData];
+
+  // 1. Ticker filter
+  if (selectedTickerFilter) {
+    filtered = filtered.filter((m) => m.ticker === selectedTickerFilter);
+  }
+
+  // 2. Direction filter
+  if (selectedDirectionFilter === "gain") {
+    filtered = filtered.filter((m) => m.pct_change >= 0);
+  } else if (selectedDirectionFilter === "loss") {
+    filtered = filtered.filter((m) => m.pct_change < 0);
+  }
+
+  // 3. Render elements
+  renderSummary(filtered);
+  renderChart(filtered);
+  renderCards(filtered);
+
+  if (filtered.length === 0) {
+    elGrid.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); padding: 3rem 1rem; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--bg-card);">
+        No movers match the current filters.
+      </div>
+    `;
+  }
+}
+
+function setDirectionFilter(dir) {
+  selectedDirectionFilter = dir;
+  ["all", "gain", "loss"].forEach((d) => {
+    const btn = document.getElementById(`filter-dir-${d}`);
+    if (btn) {
+      if (d === dir) {
+        btn.classList.add("active");
+      } else {
+        btn.classList.remove("active");
+      }
+    }
+  });
+  applyFiltersAndRender();
+}
+
+function setupFilters() {
+  const btnAll  = document.getElementById("filter-dir-all");
+  const btnGain = document.getElementById("filter-dir-gain");
+  const btnLoss = document.getElementById("filter-dir-loss");
+
+  if (btnAll)  btnAll.addEventListener("click", () => setDirectionFilter("all"));
+  if (btnGain) btnGain.addEventListener("click", () => setDirectionFilter("gain"));
+  if (btnLoss) btnLoss.addEventListener("click", () => setDirectionFilter("loss"));
+
+  const pills = document.querySelectorAll(".watchlist-pills .pill");
+  pills.forEach((pill) => {
+    pill.addEventListener("click", () => {
+      const ticker = pill.textContent.trim();
+      if (selectedTickerFilter === ticker) {
+        selectedTickerFilter = null;
+        pill.classList.remove("active");
+      } else {
+        selectedTickerFilter = ticker;
+        pills.forEach((p) => p.classList.remove("active"));
+        pill.classList.add("active");
+      }
+      applyFiltersAndRender();
+    });
+  });
+}
+
 // ── Data fetching ─────────────────────────────────────────────────────────
 
 async function loadData() {
@@ -246,9 +322,8 @@ async function loadData() {
       return;
     }
 
-    renderSummary(json.data);
-    renderChart(json.data);
-    renderCards(json.data);
+    allMoversData = json.data;
+    applyFiltersAndRender();
     showContent();
 
   } catch (err) {
@@ -259,7 +334,9 @@ async function loadData() {
 
 // ── Boot ──────────────────────────────────────────────────────────────────
 
+setupFilters();
 loadData();
 
 // Auto-refresh every hour so the page stays current without a manual reload
 setInterval(loadData, 60 * 60 * 1000);
+
