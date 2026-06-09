@@ -271,7 +271,7 @@ Responds to `GET /movers`. Builds a wider calendar lookback to tolerate weekends
 | API Gateway 5XX Error | API Gateway alarm fires on any server/lambda errors |
 | `config.js` URL not set | Frontend shows clear error panel with "API URL is not configured" |
 
-#### 🚨 Monitoring & Alerting
+#### [ALERTS] Monitoring & Alerting
 1. **CloudWatch Metrics**: Alarms monitor Lambda execution metrics (`Errors` for Ingestion) and API Gateway (`5XXError` over a 5-minute window).
 2. **SNS Notifications**: When any alarm breaches its threshold, it automatically triggers an SNS Topic (`stock-pipeline-prod-alerts-topic`). 
 3. **Email Subscriptions**: An administrator email can be registered with the topic by setting the `admin_email` Terraform variable, sending real-time notification alerts if any critical subsystem experiences downtime.

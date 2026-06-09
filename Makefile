@@ -32,7 +32,7 @@ apply: ## Deploy / update all infrastructure
 	cd $(TF_DIR) && terraform apply
 
 destroy: ## Tear down all AWS resources (irreversible!)
-	@read -p "⚠️  This will destroy ALL resources. Type 'yes' to confirm: " confirm && \
+	@read -p "[WARNING] This will destroy ALL resources. Type 'yes' to confirm: " confirm && \
 	  [ "$$confirm" = "yes" ] && cd $(TF_DIR) && terraform destroy
 
 # ── Frontend ───────────────────────────────────────────────────────────────
@@ -40,19 +40,19 @@ destroy: ## Tear down all AWS resources (irreversible!)
 frontend-deploy: ## Inject API URL into config.js and sync frontend to S3
 	$(eval API_URL  := $(call _tf_out,api_gateway_url))
 	$(eval S3_BUCKET := $(call _tf_out,s3_bucket_name))
-	@if [ -z "$(API_URL)" ]; then echo "❌ Run 'make apply' first"; exit 1; fi
+	@if [ -z "$(API_URL)" ]; then echo "[ERROR] Run 'make apply' first"; exit 1; fi
 	@cp frontend/config.js /tmp/config.js.bak
 	@sed -i "s|PLACEHOLDER_API_URL|$(API_URL)|g" frontend/config.js
 	@aws s3 sync frontend/ "s3://$(S3_BUCKET)/" --delete --cache-control "max-age=300, public"
 	@cp /tmp/config.js.bak frontend/config.js   # restore placeholder for local dev
-	@echo "✅ Frontend live at: $(call _tf_out,s3_website_url)"
+	@echo "[SUCCESS] Frontend live at: $(call _tf_out,s3_website_url)"
 
 # ── Lambda helpers ─────────────────────────────────────────────────────────
 
 trigger: ## Manually invoke the ingestion Lambda (test run)
 	$(eval FUNC := $(call _tf_out,ingestion_lambda_name))
-	@if [ -z "$(FUNC)" ]; then echo "❌ Run 'make apply' first"; exit 1; fi
-	@echo "▶ Invoking $(FUNC)…"
+	@if [ -z "$(FUNC)" ]; then echo "[ERROR] Run 'make apply' first"; exit 1; fi
+	@echo "[RUN] Invoking $(FUNC)..."
 	@aws lambda invoke \
 	  --function-name "$(FUNC)" \
 	  --log-type Tail \
@@ -92,8 +92,8 @@ create-state-bucket: ## Create S3 + DynamoDB for Terraform remote state (run onc
 	  --billing-mode PAY_PER_REQUEST \
 	  --region "$$REGION" && \
 	echo "" && \
-	echo "✅ State bucket:  $$BUCKET" && \
-	echo "✅ Lock table:    stock-pipeline-tf-locks" && \
+	echo "[SUCCESS] State bucket:  $$BUCKET" && \
+	echo "[SUCCESS] Lock table:    stock-pipeline-tf-locks" && \
 	echo "" && \
 	echo "Uncomment the backend block in terraform/main.tf and set:" && \
 	echo '  bucket = "'$$BUCKET'"'
