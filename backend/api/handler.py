@@ -63,10 +63,11 @@ def lambda_handler(event, context):  # noqa: ARG001
 
     try:
         today = datetime.now(timezone.utc).date()
-        # Build keys for the last 7 calendar days; batch_get_item silently skips missing keys
+        # Look back 14 calendar days to guarantee we cover 7 trading days
+        # (weekends and holidays have no records; batch_get_item silently skips them)
         date_keys = [
             {"date": (today - timedelta(days=i)).strftime("%Y-%m-%d")}
-            for i in range(7)
+            for i in range(14)
         ]
 
         db_resp = _dynamodb.batch_get_item(

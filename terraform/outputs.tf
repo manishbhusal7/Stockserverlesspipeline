@@ -1,6 +1,6 @@
 output "api_gateway_url" {
   description = "Full URL for the GET /movers endpoint"
-  value       = "${aws_apigatewayv2_stage.api.invoke_url}/movers"
+  value       = "${trimsuffix(aws_apigatewayv2_stage.api.invoke_url, "/")}/movers"
 }
 
 output "s3_website_url" {
