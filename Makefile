@@ -4,7 +4,7 @@
 # Usage: make <target>
 
 .PHONY: help init validate plan apply destroy \
-        frontend-deploy trigger seed-data \
+        frontend-deploy trigger \
         create-state-bucket logs-ingestion logs-api
 
 SHELL := /bin/bash
@@ -63,11 +63,6 @@ trigger: ## Manually invoke the ingestion Lambda (test run)
 	@echo ""
 	@echo "── Response ──────────────────────────────"
 	@cat /tmp/ingestion-response.json | python3 -m json.tool
-
-seed-data: ## Seed DynamoDB with 7 days of mock data (for UI testing before the cron runs)
-	$(eval TABLE := $(call _tf_out,dynamodb_table_name))
-	@if [ -z "$(TABLE)" ]; then echo "❌ Run 'make apply' first"; exit 1; fi
-	@python3 scripts/seed_data.py "$(TABLE)"
 
 # ── Logs ──────────────────────────────────────────────────────────────────
 

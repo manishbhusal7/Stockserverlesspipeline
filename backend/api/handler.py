@@ -8,6 +8,7 @@ Invoked via API Gateway HTTP API (payload format 2.0).
 import json
 import logging
 import os
+import time
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
@@ -17,6 +18,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 TABLE_NAME: str = os.environ["DYNAMODB_TABLE_NAME"]
+LOOKBACK_DAYS = int(os.environ.get("LOOKBACK_DAYS", "21"))
+RESULT_LIMIT = int(os.environ.get("RESULT_LIMIT", "7"))
 
 _dynamodb = boto3.resource("dynamodb")
 
@@ -47,6 +50,31 @@ def _response(status: int, body: dict) -> dict:
     }
 
 
+def _batch_get_all(date_keys: list[dict], max_retries: int = 5) -> list[dict]:
+    """Batch-read requested date keys, retrying any DynamoDB unprocessed keys."""
+    request_items = {
+        TABLE_NAME: {
+            "Keys": date_keys,
+            "ProjectionExpression": "#dt, ticker, pct_change, close_price, open_price",
+            "ExpressionAttributeNames": {"#dt": "date"},
+        }
+    }
+
+    records = []
+    for attempt in range(max_retries + 1):
+        db_resp = _dynamodb.batch_get_item(RequestItems=request_items)
+        records.extend(db_resp.get("Responses", {}).get(TABLE_NAME, []))
+        request_items = db_resp.get("UnprocessedKeys", {})
+        if not request_items:
+            return records
+
+        wait = min(2 ** attempt, 8)
+        logger.warning("DynamoDB returned unprocessed keys; retrying in %ss", wait)
+        time.sleep(wait)
+
+    raise RuntimeError("DynamoDB batch_get_item left unprocessed keys after retries")
+
+
 # ── Lambda handler ───────────────────────────────────────────────────────────
 
 def lambda_handler(event, context):  # noqa: ARG001
@@ -63,25 +91,16 @@ def lambda_handler(event, context):  # noqa: ARG001
 
     try:
         today = datetime.now(timezone.utc).date()
-        # Look back 14 calendar days to guarantee we cover 7 trading days
-        # (weekends and holidays have no records; batch_get_item silently skips them)
+        # Look back far enough to cover weekends and market holidays, then cap
+        # the response to the latest seven stored winners.
         date_keys = [
             {"date": (today - timedelta(days=i)).strftime("%Y-%m-%d")}
-            for i in range(14)
+            for i in range(LOOKBACK_DAYS)
         ]
 
-        db_resp = _dynamodb.batch_get_item(
-            RequestItems={
-                TABLE_NAME: {
-                    "Keys": date_keys,
-                    "ProjectionExpression": "#dt, ticker, pct_change, close_price, open_price",
-                    "ExpressionAttributeNames": {"#dt": "date"},
-                }
-            }
-        )
-
-        records = db_resp.get("Responses", {}).get(TABLE_NAME, [])
+        records = _batch_get_all(date_keys)
         records.sort(key=lambda r: r["date"], reverse=True)
+        records = records[:RESULT_LIMIT]
 
         movers = [
             {

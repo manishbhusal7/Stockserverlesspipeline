@@ -12,10 +12,7 @@
 const API_URL =
   (window.APP_CONFIG && window.APP_CONFIG.apiUrl !== "PLACEHOLDER_API_URL"
     ? window.APP_CONFIG.apiUrl
-    : null) ||
-  // Fallback: set VITE_API_URL during local dev if needed
-  import.meta?.env?.VITE_API_URL ||
-  null;
+    : null);
 
 // ── DOM refs ──────────────────────────────────────────────────────────────
 

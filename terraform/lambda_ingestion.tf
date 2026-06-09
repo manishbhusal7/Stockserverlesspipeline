@@ -2,7 +2,7 @@
 data "archive_file" "ingestion" {
   type        = "zip"
   source_dir  = "${path.root}/../backend/ingestion"
-  output_path = "${path.root}/.build/ingestion.zip"
+  output_path = "${path.root}/ingestion.zip"
 }
 
 resource "aws_lambda_function" "ingestion" {
@@ -13,7 +13,7 @@ resource "aws_lambda_function" "ingestion" {
   role             = aws_iam_role.ingestion.arn
   handler          = "handler.lambda_handler"
   runtime          = "python3.12"
-  timeout          = 60 # Up to 6 tickers × ~10s with retries
+  timeout          = 180 # Allows pacing for Massive free-tier rate limits
   memory_size      = 256
 
   environment {
@@ -22,6 +22,7 @@ resource "aws_lambda_function" "ingestion" {
       MASSIVE_SECRET_NAME = aws_secretsmanager_secret.massive_api_key.name
       WATCHLIST           = join(",", var.watchlist)
       TTL_DAYS            = tostring(var.ttl_days)
+      MASSIVE_REQUEST_DELAY_SECONDS = "13"
     }
   }
 

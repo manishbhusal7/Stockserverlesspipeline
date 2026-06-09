@@ -2,7 +2,7 @@
 data "archive_file" "api" {
   type        = "zip"
   source_dir  = "${path.root}/../backend/api"
-  output_path = "${path.root}/.build/api.zip"
+  output_path = "${path.root}/api.zip"
 }
 
 resource "aws_lambda_function" "api" {

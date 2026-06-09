@@ -73,7 +73,7 @@ S3 Static Website  ──fetch──►  Chart.js bar chart + mover cards
 │   ├── app.js                  # Fetch + Chart.js + mover cards
 │   └── config.js               # Runtime API URL (injected by CI/CD)
 ├── scripts/
-│   └── seed_data.py            # Populate DynamoDB with mock data for UI testing
+│   └── local_server.py         # Local frontend/API server using live Massive data
 ├── Makefile                    # Developer shortcuts
 └── README.md
 ```
@@ -170,13 +170,14 @@ This injects the API URL into `frontend/config.js` and syncs the SPA to S3.
 
 ## Step 5 — Test the Pipeline
 
-### Option A: Seed mock data (instant)
+### Option A: Test locally with live Massive data
 ```bash
-make seed-data
+MASSIVE_API_KEY="your-key-here" python3 scripts/local_server.py
 ```
-Inserts 5–7 synthetic trading-day records so you can verify the UI immediately.
 
-### Option B: Manually trigger the ingestion Lambda
+Open `http://localhost:8000`. The local API calls Massive directly and returns `"source": "live"`. The server refuses to start without `MASSIVE_API_KEY`.
+
+### Option B: Manually trigger the ingestion Lambda after deploy
 ```bash
 make trigger
 ```
@@ -239,7 +240,7 @@ The ticker with the highest `abs(pct_change)` is written to DynamoDB:
 
 ### API Lambda
 
-Responds to `GET /movers`. Builds 7 date keys (today − 0..6 days) and issues a single `BatchGetItem` to DynamoDB. Returns sorted JSON:
+Responds to `GET /movers`. Builds a wider calendar lookback to tolerate weekends and market holidays, reads those date keys from DynamoDB, retries any `UnprocessedKeys`, sorts by date, and returns the latest 7 stored winners:
 
 ```json
 {
@@ -264,7 +265,7 @@ Responds to `GET /movers`. Builds 7 date keys (today − 0..6 days) and issues a
 |---|---|
 | Massive API rate-limit (429) | Exponential back-off, up to 3 retries per ticker |
 | Massive API auth failure (401/403) | Immediate raise → CloudWatch alarm fires |
-| No data returned (market closed) | Lambda returns 200 with a log message; no DynamoDB write |
+| No valid ticker data returned | Lambda raises an error so EventBridge retries and the CloudWatch alarm can fire |
 | API Lambda DynamoDB error | Returns HTTP 500 with structured JSON error |
 | `config.js` URL not set | Frontend shows clear error panel with "API URL is not configured" |
 
@@ -304,7 +305,7 @@ python3 -m http.server 8080
 | **HTTP API (v2) over REST API (v1)** | Lower latency, simpler config, cheaper pricing, CORS built-in |
 | **DynamoDB PAY_PER_REQUEST** | Zero cost at low volume; no capacity planning needed |
 | **`date` as the partition key** | Each trading day has exactly one winner; O(1) lookups |
-| **`BatchGetItem` vs Scan** | Reads exactly the 7 keys we need; avoids full-table scan |
+| **`BatchGetItem` vs Scan** | Reads a bounded date lookback; avoids full-table scans while still handling weekends and holidays |
 | **urllib over `requests`** | No Lambda layer / dependencies needed — stdlib only |
 | **Local Terraform state (default)** | Simpler initial setup; remote S3 backend instructions provided |
 | **Vanilla JS frontend** | No build step = simpler S3 deployment; Chart.js from CDN |
