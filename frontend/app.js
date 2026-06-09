@@ -114,8 +114,6 @@ function rebuildWatchlistChecklist() {
   const tickersList = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA", "NVDA"];
 
   tickersList.forEach((ticker) => {
-    // Count occurrences of this ticker in the current dataset
-    const count = allMoversData.filter((m) => m.ticker === ticker).length;
     const isActive = selectedTickers.has(ticker);
 
     const item = document.createElement("div");
@@ -125,7 +123,6 @@ function rebuildWatchlistChecklist() {
         <span class="checkbox-custom"></span>
         <span class="item-ticker">${ticker}</span>
       </div>
-      <span class="item-badge">${count} pts</span>
     `;
 
     item.addEventListener("click", () => {

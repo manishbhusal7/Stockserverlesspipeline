@@ -1,214 +1,217 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="TRE Terminal — Advanced daily top-mover tracker and financial analyzer." />
-    <title>TRE Terminal · Market Analytics</title>
 
-    <!-- System fonts used in styles.css -->
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Manish Terminal — Advanced daily top-mover tracker and financial analyzer." />
+  <title>Manish Terminal · Market Analytics</title>
 
-    <!-- Chart.js (CDN — no build step) -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <!-- System fonts used in styles.css -->
 
-    <link rel="stylesheet" href="styles.css" />
-  </head>
-  <body>
+  <!-- Chart.js (CDN — no build step) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 
-    <!-- ── App Layout Container ─────────────────────────────────────────── -->
-    <div class="app-layout">
+  <link rel="stylesheet" href="styles.css" />
+</head>
 
-      <!-- ── Sidebar ───────────────────────────────────────────────────── -->
-      <aside class="app-sidebar">
-        <div class="sidebar-brand">
-          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
-            <polyline points="16 7 22 7 22 13"></polyline>
-          </svg>
-          <div>
-            <h1 class="brand-name">TRE TERMINAL</h1>
-            <p class="brand-sub">Serverless Stock Analytics</p>
+<body>
+
+  <!-- ── App Layout Container ─────────────────────────────────────────── -->
+  <div class="app-layout">
+
+    <!-- ── Sidebar ───────────────────────────────────────────────────── -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"></polyline>
+          <polyline points="16 7 22 7 22 13"></polyline>
+        </svg>
+        <div>
+          <h1 class="brand-name">Manish TERMINAL</h1>
+          <p class="brand-sub">Serverless Stock Analytics</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-menu">
+        <div class="menu-section">
+          <div class="section-header-inline">
+            <span class="menu-title">Watchlist Filters</span>
+            <button id="btn-select-all" class="btn-link">All</button>
+          </div>
+          <div id="watchlist-checklist" class="watchlist-checklist">
+            <!-- Dynamically populated checklist -->
           </div>
         </div>
 
-        <nav class="sidebar-menu">
-          <div class="menu-section">
-            <div class="section-header-inline">
-              <span class="menu-title">Watchlist Filters</span>
-              <button id="btn-select-all" class="btn-link">All</button>
+        <div class="menu-section">
+          <span class="menu-title">Control Center</span>
+
+          <div class="control-group">
+            <label class="control-label">Direction filter</label>
+            <div class="segmented-control">
+              <button id="filter-dir-all" class="btn-segment active">All</button>
+              <button id="filter-dir-gain" class="btn-segment">Gains</button>
+              <button id="filter-dir-loss" class="btn-segment">Losses</button>
             </div>
-            <div id="watchlist-checklist" class="watchlist-checklist">
-              <!-- Dynamically populated checklist -->
-            </div>
-          </div>
-
-          <div class="menu-section">
-            <span class="menu-title">Control Center</span>
-            
-            <div class="control-group">
-              <label class="control-label">Direction filter</label>
-              <div class="segmented-control">
-                <button id="filter-dir-all" class="btn-segment active">All</button>
-                <button id="filter-dir-gain" class="btn-segment">Gains</button>
-                <button id="filter-dir-loss" class="btn-segment">Losses</button>
-              </div>
-            </div>
-
-          </div>
-
-          <div class="menu-section">
-            <span class="menu-title">Connection Diagnostic</span>
-            <div class="diagnostic-card">
-              <div class="diag-row">
-                <span class="diag-label">AWS Gateway</span>
-                <span id="diag-gw-status" class="diag-val connected"><span class="dot"></span>Connected</span>
-              </div>
-              <div class="diag-row">
-                <span class="diag-label">Lookup Limit</span>
-                <span class="diag-val mono">7 Days</span>
-              </div>
-              <div class="diag-row">
-                <span class="diag-label">Cache Health</span>
-                <span id="diag-cache-status" class="diag-val mono">ETag Active</span>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <div class="sidebar-footer">
-          <span>Powered by Massive API</span>
-        </div>
-      </aside>
-
-      <!-- ── Main Dashboard Panel ────────────────────────────────────────── -->
-      <main class="app-main">
-        
-        <!-- Top Navigation Bar -->
-        <header class="app-header">
-          <div class="header-left">
-            <div class="market-status-badge">
-              <span class="pulse-dot"></span>
-              <span class="market-status-text">US Markets Closed</span>
-            </div>
-          </div>
-          <div class="header-right">
-            <div class="api-badge">
-              <span class="badge-label">API Mode:</span>
-              <span id="api-mode-val" class="badge-val live">Massive Live</span>
-            </div>
-          </div>
-        </header>
-
-        <!-- Loading skeleton -->
-        <div id="state-loading" class="state-panel">
-          <div class="spinner"></div>
-          <p>Connecting to pipeline API & retrieving records...</p>
-        </div>
-
-        <!-- Error panel -->
-        <div id="state-error" class="state-panel hidden">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon error-icon">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="8" x2="12" y2="12"></line>
-            <line x1="12" y1="16" x2="12.01" y2="16"></line>
-          </svg>
-          <p id="error-msg">Could not establish API handshake. Please check connection.</p>
-          <button class="btn-retry" onclick="loadData()">Retry Connection</button>
-        </div>
-
-        <!-- Empty state -->
-        <div id="state-empty" class="state-panel hidden">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon">
-            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
-            <line x1="8" y1="21" x2="16" y2="21"></line>
-            <line x1="12" y1="17" x2="12" y2="21"></line>
-          </svg>
-          <p>No trading data loaded. The pipeline runs automatically daily after market close.</p>
-        </div>
-
-        <!-- Content Area -->
-        <div id="content" class="hidden">
-
-          <!-- KPI Summary Cards -->
-          <div class="summary-grid">
-            <div class="kpi-card">
-              <span class="kpi-label">Analyzed Sessions</span>
-              <div class="kpi-value-row">
-                <span id="stat-count" class="kpi-value">—</span>
-                <span class="kpi-sub">Total Days</span>
-              </div>
-            </div>
-            
-            <div class="kpi-card">
-              <span class="kpi-label">Top Session Gain</span>
-              <div class="kpi-value-row">
-                <span id="stat-best" class="kpi-value gain">—</span>
-              </div>
-            </div>
-
-            <div class="kpi-card">
-              <span class="kpi-label">Max Session Loss</span>
-              <div class="kpi-value-row">
-                <span id="stat-worst" class="kpi-value loss">—</span>
-              </div>
-            </div>
-
-            <div class="kpi-card">
-              <span class="kpi-label">Avg Daily Volatility</span>
-              <div class="kpi-value-row">
-                <span id="stat-avg" class="kpi-value">—</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Chart Section -->
-          <section class="dashboard-section chart-section">
-            <div class="section-title-row">
-              <h2 class="section-heading">Historical Performance Overview</h2>
-              <span id="stat-updated" class="timestamp-badge">—</span>
-            </div>
-            <div class="chart-container-wrap">
-              <canvas id="movementChart"></canvas>
-            </div>
-          </section>
-
-          <!-- Dual View Selection Header -->
-          <div class="view-header-row">
-            <h2 class="section-heading">Daily Top Movers List</h2>
-            <div class="view-toggle-buttons">
-              <button id="toggle-view-grid" class="btn-toggle active">Grid View</button>
-              <button id="toggle-view-table" class="btn-toggle">Table Spreadsheet</button>
-            </div>
-          </div>
-
-          <!-- Mover Grid View -->
-          <div id="movers-grid" class="movers-grid"></div>
-
-          <!-- Mover Table View -->
-          <div id="movers-table-wrapper" class="movers-table-wrapper hidden">
-            <table class="movers-table">
-              <thead>
-                <tr>
-                  <th>Date</th>
-                  <th>Ticker</th>
-                  <th>Direction</th>
-                  <th class="num-col">Change %</th>
-                  <th class="num-col">Open Price</th>
-                  <th class="num-col">Close Price</th>
-                  <th class="num-col">Move Delta</th>
-                </tr>
-              </thead>
-              <tbody id="movers-table-body">
-                <!-- Dynamically filled -->
-              </tbody>
-            </table>
           </div>
 
         </div>
-      </main>
-    </div>
 
-    <script src="config.js"></script>
-    <script src="app.js"></script>
-  </body>
+        <div class="menu-section">
+          <span class="menu-title">Connection Diagnostic</span>
+          <div class="diagnostic-card">
+            <div class="diag-row">
+              <span class="diag-label">AWS Gateway</span>
+              <span id="diag-gw-status" class="diag-val connected"><span class="dot"></span>Connected</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">Lookup Limit</span>
+              <span class="diag-val mono">7 Days</span>
+            </div>
+            <div class="diag-row">
+              <span class="diag-label">Cache Health</span>
+              <span id="diag-cache-status" class="diag-val mono">ETag Active</span>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <span>Powered by Massive API</span>
+      </div>
+    </aside>
+
+    <!-- ── Main Dashboard Panel ────────────────────────────────────────── -->
+    <main class="app-main">
+
+      <!-- Top Navigation Bar -->
+      <header class="app-header">
+        <div class="header-left">
+          <div class="market-status-badge">
+            <span class="pulse-dot"></span>
+            <span class="market-status-text">US Markets Closed</span>
+          </div>
+        </div>
+        <div class="header-right">
+          <div class="api-badge">
+            <span class="badge-label">API Mode:</span>
+            <span id="api-mode-val" class="badge-val live">Massive Live</span>
+          </div>
+        </div>
+      </header>
+
+      <!-- Loading skeleton -->
+      <div id="state-loading" class="state-panel">
+        <div class="spinner"></div>
+        <p>Connecting to pipeline API & retrieving records...</p>
+      </div>
+
+      <!-- Error panel -->
+      <div id="state-error" class="state-panel hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon error-icon">
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+        <p id="error-msg">Could not establish API handshake. Please check connection.</p>
+        <button class="btn-retry" onclick="loadData()">Retry Connection</button>
+      </div>
+
+      <!-- Empty state -->
+      <div id="state-empty" class="state-panel hidden">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="state-icon">
+          <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+          <line x1="8" y1="21" x2="16" y2="21"></line>
+          <line x1="12" y1="17" x2="12" y2="21"></line>
+        </svg>
+        <p>No trading data loaded. The pipeline runs automatically daily after market close.</p>
+      </div>
+
+      <!-- Content Area -->
+      <div id="content" class="hidden">
+
+        <!-- KPI Summary Cards -->
+        <div class="summary-grid">
+          <div class="kpi-card">
+            <span class="kpi-label">Analyzed Sessions</span>
+            <div class="kpi-value-row">
+              <span id="stat-count" class="kpi-value">—</span>
+              <span class="kpi-sub">Total Days</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Top Session Gain</span>
+            <div class="kpi-value-row">
+              <span id="stat-best" class="kpi-value gain">—</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Max Session Loss</span>
+            <div class="kpi-value-row">
+              <span id="stat-worst" class="kpi-value loss">—</span>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <span class="kpi-label">Avg Daily Volatility</span>
+            <div class="kpi-value-row">
+              <span id="stat-avg" class="kpi-value">—</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chart Section -->
+        <section class="dashboard-section chart-section">
+          <div class="section-title-row">
+            <h2 class="section-heading">Historical Performance Overview</h2>
+            <span id="stat-updated" class="timestamp-badge">—</span>
+          </div>
+          <div class="chart-container-wrap">
+            <canvas id="movementChart"></canvas>
+          </div>
+        </section>
+
+        <!-- Dual View Selection Header -->
+        <div class="view-header-row">
+          <h2 class="section-heading">Daily Top Movers List</h2>
+          <div class="view-toggle-buttons">
+            <button id="toggle-view-grid" class="btn-toggle active">Grid View</button>
+            <button id="toggle-view-table" class="btn-toggle">Table Spreadsheet</button>
+          </div>
+        </div>
+
+        <!-- Mover Grid View -->
+        <div id="movers-grid" class="movers-grid"></div>
+
+        <!-- Mover Table View -->
+        <div id="movers-table-wrapper" class="movers-table-wrapper hidden">
+          <table class="movers-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Direction</th>
+                <th class="num-col">Change %</th>
+                <th class="num-col">Open Price</th>
+                <th class="num-col">Close Price</th>
+                <th class="num-col">Move Delta</th>
+              </tr>
+            </thead>
+            <tbody id="movers-table-body">
+              <!-- Dynamically filled -->
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+
 </html>
