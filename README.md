@@ -35,10 +35,11 @@ S3 Static Website  ──fetch──►  Chart.js bar chart + mover cards
 | **Lambda** | Ingestion (daily cron) + API (on-demand) |
 | **EventBridge** | Cron trigger — `cron(0 22 * * ? *)` |
 | **DynamoDB** | Storage — one record per trading day |
-| **API Gateway** | HTTP API v2 — `GET /movers` |
+| **API Gateway** | HTTP API v2 — `GET /movers` with execution logs enabled |
 | **S3** | Static website hosting for the SPA |
-| **Secrets Manager** | Secure storage for the Massive API key |
-| **CloudWatch** | Logs + metric alarm on ingestion errors |
+| **Secrets Manager** | Secure storage for the Massive API key (no hardcoded keys in repo) |
+| **CloudWatch** | 14-day log retention + alarms for Ingestion errors and API Gateway 5XX errors |
+| **SNS** | Alert topic for real-time notification dispatch (emails) |
 | **IAM** | Least-privilege roles per Lambda |
 
 ---
@@ -259,15 +260,21 @@ Responds to `GET /movers`. Builds a wider calendar lookback to tolerate weekends
 - DynamoDB `PutItem` is idempotent on the same `date` key — running the Lambda on Saturday and Sunday both write/overwrite the same Friday record harmlessly.
 - The API returns however many records exist; missing days are simply omitted.
 
-### Error Handling
+### Error Handling & Alerts
 
 | Scenario | Behaviour |
 |---|---|
 | Massive API rate-limit (429) | Exponential back-off, up to 3 retries per ticker |
-| Massive API auth failure (401/403) | Immediate raise → CloudWatch alarm fires |
-| No valid ticker data returned | Lambda raises an error so EventBridge retries and the CloudWatch alarm can fire |
+| Massive API auth failure (401/403) | Immediate raise → Ingestion CloudWatch alarm fires |
+| No valid ticker data returned | Lambda raises error so EventBridge retries → CloudWatch alarm fires |
 | API Lambda DynamoDB error | Returns HTTP 500 with structured JSON error |
+| API Gateway 5XX Error | API Gateway alarm fires on any server/lambda errors |
 | `config.js` URL not set | Frontend shows clear error panel with "API URL is not configured" |
+
+#### 🚨 Monitoring & Alerting
+1. **CloudWatch Metrics**: Alarms monitor Lambda execution metrics (`Errors` for Ingestion) and API Gateway (`5XXError` over a 5-minute window).
+2. **SNS Notifications**: When any alarm breaches its threshold, it automatically triggers an SNS Topic (`stock-pipeline-prod-alerts-topic`). 
+3. **Email Subscriptions**: An administrator email can be registered with the topic by setting the `admin_email` Terraform variable, sending real-time notification alerts if any critical subsystem experiences downtime.
 
 ---
 

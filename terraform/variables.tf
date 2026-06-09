@@ -45,3 +45,10 @@ variable "ttl_days" {
   type        = number
   default     = 30
 }
+
+variable "admin_email" {
+  description = "Email address to receive critical system alerts (optional)"
+  type        = string
+  default     = ""
+}
+
