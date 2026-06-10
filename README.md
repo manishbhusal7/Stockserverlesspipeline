@@ -33,7 +33,7 @@ S3 Static Website  ──fetch──►  Chart.js bar chart + mover cards
 | Service | Role |
 |---|---|
 | **Lambda** | Ingestion (daily cron) + API (on-demand) |
-| **EventBridge** | Cron trigger — `cron(0 22 * * ? *)` |
+| **EventBridge** | Cron trigger — `cron(0 5 * * ? *)` (5 AM UTC / midnight EST) |
 | **DynamoDB** | Storage — one record per trading day |
 | **API Gateway** | HTTP API v2 — `GET /movers` with execution logs enabled |
 | **S3** | Static website hosting for the SPA |
@@ -203,7 +203,7 @@ Every push to `main` will now:
 
 ### Ingestion Lambda
 
-Triggered by EventBridge at `cron(0 22 * * ? *)` (10 PM UTC = after US market close).
+Triggered by EventBridge at `cron(0 5 * * ? *)` (5 AM UTC / midnight EST = after US market close and API lag transition).
 
 For each ticker in the watchlist, it calls:
 ```
