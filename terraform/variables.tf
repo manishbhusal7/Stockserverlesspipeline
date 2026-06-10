@@ -36,8 +36,8 @@ variable "watchlist" {
 variable "cron_schedule" {
   description = "EventBridge schedule expression for the daily ingestion Lambda"
   type        = string
-  # 10 PM UTC = after 4 PM ET market close (accommodates both EDT and EST)
-  default = "cron(0 22 * * ? *)"
+  # 5 AM UTC = midnight EST / 1 AM EDT of the next day (guarantees API provider has published finalized daily aggregates)
+  default = "cron(0 5 * * ? *)"
 }
 
 variable "ttl_days" {
