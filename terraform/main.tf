@@ -16,16 +16,13 @@ terraform {
     }
   }
 
-  # ── Remote state (recommended) ──────────────────────────────────────────
-  # Uncomment after creating a state bucket with: make create-state-bucket
-  #
-  # backend "s3" {
-  #   bucket         = "stock-pipeline-tf-state-<your-account-id>"
-  #   key            = "stock-pipeline/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   encrypt        = true
-  #   dynamodb_table = "stock-pipeline-tf-locks"
-  # }
+  backend "s3" {
+    bucket         = "stock-pipeline-tf-state-920372993614"
+    key            = "stock-pipeline/terraform.tfstate"
+    region         = "us-east-1"
+    encrypt        = true
+    dynamodb_table = "stock-pipeline-tf-locks"
+  }
 }
 
 provider "aws" {
