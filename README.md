@@ -93,3 +93,5 @@ This automatically updates your HTML configuration with your live API URL and sy
     *   The API Lambda has read-only DynamoDB permissions and is blocked from accessing Secrets Manager or any external network.
 *   **Optimized Performance**:
     *   The query API avoids full-table scans by performing a targeted `BatchGetItem` for a rolling date range, handling holidays and weekends gracefully.
+
+
